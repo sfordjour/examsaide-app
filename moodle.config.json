@@ -1,6 +1,6 @@
 {
-    "app_id": "com.moodle.moodlemobile",
-    "appname": "Moodle Mobile",
+    "app_id": "com.examsa.examsaideapp",
+    "appname": "ExamsAide",
     "versioncode": 53000,
     "versionname": "5.3.0",
     "cache_update_frequency_usually": 420000,
@@ -68,40 +68,34 @@
         "zh-tw": "正體中文"
     },
     "wsservice": "moodle_mobile_app",
-    "demo_sites": {
-        "student": {
-            "url": "https://school.moodledemo.net",
-            "username": "student",
-            "password": "moodle26"
-        },
-        "teacher": {
-            "url": "https://school.moodledemo.net",
-            "username": "teacher",
-            "password": "moodle26"
-        }
-    },
+    "demo_sites": {},
     "defaultZoomLevel": "none",
     "zoomlevels": {
         "none": 100,
         "medium": 110,
         "high": 120
     },
-    "customurlscheme": "moodlemobile",
-    "sites": [],
+    "customurlscheme": "examsaide",
+    "sites": [
+        {
+            "url": "https://learn.examsaide.com",
+            "name": "ExamsAide"
+        }
+    ],
     "multisitesdisplay": "",
     "sitefindersettings": {},
     "onlyallowlistedsites": false,
     "forcedefaultlanguage": false,
-    "privacypolicy": "https://moodle.net/moodle-app-privacy/",
-    "notificoncolor": "#f98012",
+    "privacypolicy": "https://examsaide.com/privacy",
+    "notificoncolor": "#009dae",
     "enableanalytics": false,
     "forceColorScheme": "",
     "forceLoginLogo": false,
     "showTopLogo": "hidden",
     "ioswebviewscheme": "moodleappfs",
     "appstores": {
-        "android": "com.moodle.moodlemobile",
-        "ios": "id633359593"
+        "android": "com.examsa.examsaideapp",
+        "ios": ""
     },
     "wsrequestqueuelimit": 10,
     "wsrequestqueuedelay": 100,
