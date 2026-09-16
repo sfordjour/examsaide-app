@@ -1,4 +1,4 @@
-name: Build ExamsAide Android APK
+name: Build Android Debug APK
 
 on:
   push:
@@ -10,64 +10,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-
       - name: Set up Java 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
           java-version: '17'
+          distribution: 'temurin'
 
-      - name: Accept Android SDK licenses
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-      - name: Patch google-services.json for ExamsAide package
-        run: |
-          if [ -f google-services.json ]; then
-            sed -i 's/com\.moodle\.moodlemobile/com.examsa.examsaideapp/g' google-services.json
-            echo "Patched google-services.json:"
-            grep package_name google-services.json
-          else
-            echo "Creating stub google-services.json"
-            printf '{\n  "project_info": {"project_number":"","project_id":"","storage_bucket":""},\n  "client": [{\n    "client_info": {\n      "mobilesdk_app_id": "1:111111111111:android:1111111111111111",\n      "android_client_info": {"package_name": "com.examsa.examsaideapp"}\n    },\n    "oauth_client": [{"client_id":"","client_type":3}],\n    "api_key": [{"current_key":""}],\n    "services": {\n      "analytics_service":{"status":1},\n      "appinvite_service":{"status":1,"other_platform_oauth_client":[]},\n      "ads_service":{"status":2}\n    }\n  }],\n  "configuration_version": "1"\n}\n' > google-services.json
-          fi
-
-      - name: Make Cordova hooks executable
-        run: |
-          if ls scripts/cordova-hooks/*.sh 2>/dev/null; then
-            chmod +x scripts/cordova-hooks/*.sh
-          else
-            echo "No shell hooks found, skipping"
-          fi
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Install Ionic CLI and Cordova globally
-        run: npm install -g @ionic/cli cordova
-
-      - name: Build Angular/Ionic web app
-        env:
-          NODE_OPTIONS: --max-old-space-size=8192
-        run: npx ionic build --configuration=development
-
-      - name: Add Android platform
-        run: npx cordova platform add android || echo "Platform already present"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
 
       - name: Build debug APK
-        run: npx cordova build android
+        run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK as downloadable artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ExamsAide-debug-build-${{ github.run_number }}
-          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          name: examsaide-debug-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 30

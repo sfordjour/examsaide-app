@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "739238079813",
+    "project_id": "examsaide-sam-fjurdor",
+    "storage_bucket": "examsaide-sam-fjurdor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739238079813:android:6aec9aaff6d1aaead7622c",
+        "android_client_info": {
+          "package_name": "com.examsa.examsaideapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXBfW0Eaq9d9cVmKcnwHxmXzLJ7ujN2MA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

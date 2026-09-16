@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Only allow HTTPS for examsaide and payment domains -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">examsaide.com</domain>
+        <domain includeSubdomains="true">paystack.com</domain>
+        <domain includeSubdomains="true">paystack.co</domain>
+    </domain-config>
+</network-security-config>
