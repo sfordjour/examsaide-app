@@ -1,4 +1,4 @@
-﻿name: Build ExamsAide Android APK
+name: Build ExamsAide Android APK
 
 on:
   push:
@@ -28,6 +28,17 @@ jobs:
       - name: Accept Android SDK licenses
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Patch google-services.json for ExamsAide package
+        run: |
+          if [ -f google-services.json ]; then
+            sed -i 's/com\.moodle\.moodlemobile/com.examsa.examsaideapp/g' google-services.json
+            echo "Patched google-services.json:"
+            grep package_name google-services.json
+          else
+            echo "Creating stub google-services.json"
+            printf '{\n  "project_info": {"project_number":"","project_id":"","storage_bucket":""},\n  "client": [{\n    "client_info": {\n      "mobilesdk_app_id": "1:111111111111:android:1111111111111111",\n      "android_client_info": {"package_name": "com.examsa.examsaideapp"}\n    },\n    "oauth_client": [{"client_id":"","client_type":3}],\n    "api_key": [{"current_key":""}],\n    "services": {\n      "analytics_service":{"status":1},\n      "appinvite_service":{"status":1,"other_platform_oauth_client":[]},\n      "ads_service":{"status":2}\n    }\n  }],\n  "configuration_version": "1"\n}\n' > google-services.json
+          fi
 
       - name: Make Cordova hooks executable
         run: |
