@@ -143,6 +143,35 @@ export class CoreLoginSignUpService {
         return await site.callAjax('auth_email_get_signup_settings');
     }
 
+    /**
+     * Register a new ExamsAide user via the custom local_examsaide WS.
+     * Creates the account with confirmed=1 (no email step) and returns a
+     * moodle_mobile_app token for immediate login.
+     *
+     * @param userInfo User details.
+     * @param site Unauthenticated site instance.
+     * @returns Token info or throws on failure.
+     */
+    async examsaideRegister(
+        userInfo: CoreAuthSignupUserInfo,
+        site: CoreUnauthenticatedSite,
+    ): Promise<ExamsaideRegisterWSResponse> {
+        const params = {
+            username:  (userInfo.username || '').trim().toLowerCase(),
+            password:  userInfo.password,
+            firstname: CoreText.cleanTags(userInfo.firstname),
+            lastname:  CoreText.cleanTags(userInfo.lastname),
+            email:     userInfo.email.trim(),
+            city:      CoreText.cleanTags(userInfo.city || ''),
+            country:   userInfo.country || 'GH',
+        };
+
+        return await site.callAjax<ExamsaideRegisterWSResponse>(
+            'local_examsaide_register_user',
+            params,
+        );
+    }
+
 }
 export const CoreLoginSignUp = makeSingleton(CoreLoginSignUpService);
 
@@ -177,6 +206,15 @@ export type CoreAuthCustomProfileField = {
  */
 export type CoreAuthSignupUserWSResponse = {
     success: boolean; // True if the user was created false otherwise.
+    warnings?: CoreWSExternalWarning[];
+};
+
+/**
+ * Result of WS local_examsaide_register_user.
+ */
+export type ExamsaideRegisterWSResponse = {
+    token: string;        // moodle_mobile_app login token.
+    privatetoken: string; // Private token (may be empty).
     warnings?: CoreWSExternalWarning[];
 };
 
