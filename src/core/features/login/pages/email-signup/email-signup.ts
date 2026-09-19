@@ -40,6 +40,7 @@ import { CoreAlerts } from '@services/overlays/alerts';
 import { CoreSharedModule } from '@/core/shared.module';
 import { CoreUserProfileFieldComponent } from '@features/user/components/user-profile-field/user-profile-field';
 import { CoreLoginHelper } from '@features/login/services/login-helper';
+import { CoreSites } from '@services/sites';
 
 /**
  * Page to signup using email.
@@ -322,39 +323,55 @@ export default class CoreLoginEmailSignupPage implements OnInit {
         }
 
         try {
-            // Get the data for the custom profile fields.
-            const customProfileFields = await CoreUserProfileFieldDelegate.getDataForFields(
-                this.settings?.profilefields,
-                true,
-                'email',
-                this.signupForm.value,
-            );
+            // --- ExamsAide: use custom WS that creates user with confirmed=1
+            //     and returns a mobile app token for immediate login. ---
+            let registered = false;
 
-            const result = await CoreLoginSignUp.emailSignup(userInfo, this.site, {
-                recaptchaResponse, customProfileFields, redirect,
-            });
+            try {
+                const examsaideResult = await CoreLoginSignUp.examsaideRegister(userInfo, this.site);
 
-            if (result.success) {
+                if (examsaideResult.token) {
+                    // Token received — log the user in straight away.
+                    CoreForms.triggerFormSubmittedEvent(this.signupFormElement(), true);
+                    await CoreSites.newSite(this.site.getURL(), examsaideResult.token, examsaideResult.privatetoken || undefined);
+                    await CoreNavigator.navigateToSiteHome();
+                    registered = true;
+                }
+            } catch {
+                // Custom WS unavailable or failed — fall through to standard flow.
+            }
 
-                CoreForms.triggerFormSubmittedEvent(this.signupFormElement(), true);
+            if (!registered) {
+                // Fallback: standard Moodle auth_email signup (requires email confirmation).
+                const customProfileFields = await CoreUserProfileFieldDelegate.getDataForFields(
+                    this.settings?.profilefields,
+                    true,
+                    'email',
+                    this.signupForm.value,
+                );
 
-                // Show alert and go back.
-                const message = Translate.instant('core.login.emailconfirmsent', { $a: userInfo.email.trim() });
-                CoreAlerts.show({ header: Translate.instant('core.success'), message });
-                CoreNavigator.back();
-            } else {
-                this.recaptchaComponent()?.expireRecaptchaAnswer();
+                const result = await CoreLoginSignUp.emailSignup(userInfo, this.site, {
+                    recaptchaResponse, customProfileFields, redirect,
+                });
 
-                const warning = result.warnings?.[0];
-                if (warning) {
-                    let error = warning.message;
-                    if (error === 'incorrect-captcha-sol' || (!error && warning.item === 'recaptcharesponse')) {
-                        error = Translate.instant('core.login.recaptchaincorrect');
-                    }
-
-                    CoreAlerts.showError(error);
+                if (result.success) {
+                    CoreForms.triggerFormSubmittedEvent(this.signupFormElement(), true);
+                    const message = Translate.instant('core.login.emailconfirmsent', { $a: userInfo.email.trim() });
+                    CoreAlerts.show({ header: Translate.instant('core.success'), message });
+                    CoreNavigator.back();
                 } else {
-                    CoreAlerts.showError(Translate.instant('core.login.usernotaddederror'));
+                    this.recaptchaComponent()?.expireRecaptchaAnswer();
+
+                    const warning = result.warnings?.[0];
+                    if (warning) {
+                        let error = warning.message;
+                        if (error === 'incorrect-captcha-sol' || (!error && warning.item === 'recaptcharesponse')) {
+                            error = Translate.instant('core.login.recaptchaincorrect');
+                        }
+                        CoreAlerts.showError(error);
+                    } else {
+                        CoreAlerts.showError(Translate.instant('core.login.usernotaddederror'));
+                    }
                 }
             }
         } catch (error) {
