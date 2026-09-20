@@ -4,7 +4,7 @@ apply plugin: 'com.google.gms.google-services'
 
 android {
     compileSdk 34
-    namespace 'com.examsaide.app'
+    namespace 'com.examsa.examsaideapp'
 
     defaultConfig {
         applicationId 'com.examsaide.app'
