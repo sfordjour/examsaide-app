@@ -11,7 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,19 +20,29 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Setup Gradle 8.4
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
 
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ runner.temp }}/release.keystore
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-        working-directory: app/../
+      - name: Bootstrap Android project files
+        run: |
+          if [ ! -f settings.gradle ]; then
+            printf 'pluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\nrootProject.name = "ExamsAide"\ninclude \x27:app\x27\n' > settings.gradle
+          fi
+          if [ ! -f build.gradle ]; then
+            printf 'plugins {\n    id \x27com.android.application\x27 version \x278.2.2\x27 apply false\n    id \x27org.jetbrains.kotlin.android\x27 version \x271.9.22\x27 apply false\n    id \x27com.google.gms.google-services\x27 version \x274.4.0\x27 apply false\n}\n' > build.gradle
+          fi
+          gradle wrapper --gradle-version=8.4
+          chmod +x gradlew
 
       - name: Build Release AAB
         run: ./gradlew bundleRelease
-        working-directory: app/../
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
           KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
