@@ -4,14 +4,14 @@ apply plugin: 'com.google.gms.google-services'
 
 android {
     compileSdk 34
-    namespace 'com.examsa.examsaideapp'
+    namespace 'com.examsaide.app'
 
     defaultConfig {
-        applicationId 'com.examsa.examsaideapp'
+        applicationId 'com.examsaide.app'
         minSdk 24
         targetSdk 34
-        versionCode 4
-        versionName "1.4.0"
+        versionCode 1
+        versionName "1.0.0"
     }
 
     signingConfigs {
