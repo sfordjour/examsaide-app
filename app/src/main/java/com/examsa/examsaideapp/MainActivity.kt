@@ -17,7 +17,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        const val ENTRY_URL = "https://teach.examsaide.com/local/examsaide/pages/home.php"
+        const val ENTRY_URL = "https://learn.examsaide.com/local/examsaide/pages/home.php"
     }
 
     private lateinit var webView: WebView
@@ -220,7 +220,7 @@ class MainActivity : AppCompatActivity() {
             if (task.isSuccessful) {
                 @Suppress("UNUSED_VARIABLE")
                 val token = task.result
-                // TODO: POST token to teach.examsaide.com for push targeting
+                // TODO: POST token to learn.examsaide.com for push targeting
             }
         }
     }
