@@ -10,7 +10,7 @@ android {
         applicationId 'com.examsaide.app'
         minSdk 24
         targetSdk 36
-        versionCode 51101
+        versionCode 4
         versionName "1.1.0"
     }
 
