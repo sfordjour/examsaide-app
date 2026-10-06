@@ -46,8 +46,24 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState)
         } else {
-            webView.loadUrl(ENTRY_URL)
+            // App Links: if launched from an examsaide.com link (e.g. /?ref=AGENTCODE),
+            // open that exact URL so referral codes and shared links land inside the app.
+            webView.loadUrl(deepLinkUrl(intent) ?: ENTRY_URL)
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        deepLinkUrl(intent)?.let { webView.loadUrl(it) }
+    }
+
+    /** Returns the https URL this activity was launched with, if it is one of ours. */
+    private fun deepLinkUrl(intent: Intent?): String? {
+        val data = intent?.data ?: return null
+        if (intent.action != Intent.ACTION_VIEW) return null
+        val url = data.toString()
+        return if (isOwnHost(url)) url else null
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -55,12 +71,12 @@ class MainActivity : AppCompatActivity() {
         val settings = webView.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
-        settings.allowFileAccess = true
-        settings.allowContentAccess = true
+        settings.allowFileAccess = false      // web content must not read local files
+        settings.allowContentAccess = false
         settings.setSupportMultipleWindows(true)
         settings.javaScriptCanOpenWindowsAutomatically = true
         settings.loadsImagesAutomatically = true
-        settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW   // HTTPS only
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
         settings.builtInZoomControls = false
@@ -76,15 +92,19 @@ class MainActivity : AppCompatActivity() {
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
-                return if (isInternalUrl(url)) {
-                    false // Load in WebView
-                } else {
+                // Keep everything inside the app EXCEPT things that only make sense
+                // in another app. In particular, card payments bounce through the
+                // bank's 3-D Secure page on a third-party domain and must stay in
+                // this WebView, otherwise the user is thrown out mid-payment.
+                return if (shouldOpenExternally(url)) {
                     try {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     } catch (e: Exception) {
-                        // No browser installed — ignore
+                        // No app can handle it — ignore
                     }
                     true
+                } else {
+                    false // Load in WebView
                 }
             }
 
@@ -105,12 +125,15 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            @SuppressLint("WebViewClientOnReceivedSslError")
             override fun onReceivedSslError(
                 view: WebView, handler: SslErrorHandler, error: SslError
             ) {
-                // examsaide.com has a valid cert; proceed normally
-                handler.proceed()
+                // Never proceed past a certificate error. Google Play rejects apps that
+                // call handler.proceed() here ("Unsafe implementation of onReceivedSslError").
+                handler.cancel()
+                if (view.url == null || view.url == error.url) {
+                    showOfflinePage()
+                }
             }
         }
 
@@ -146,24 +169,49 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onPermissionRequest(request: PermissionRequest) {
-                request.grant(request.resources)
+                // Only our own pages may use the camera / microphone (e.g. AI tutor voice,
+                // photo upload). Any other origin is refused.
+                if (isOwnHost(request.origin.toString())) {
+                    request.grant(request.resources)
+                } else {
+                    request.deny()
+                }
             }
         }
     }
 
-    private fun isInternalUrl(url: String): Boolean {
-        val internalHosts = listOf(
-            "teach.examsaide.com",
-            "learn.examsaide.com",
-            "examsaide.com",
-            "paystack.com",
-            "paystack.co",
-            "standard.paystack.co",
-            "api.paystack.co"
+    /** True for examsaide.com and its subdomains (learn., teach., www.). */
+    private fun isOwnHost(url: String): Boolean {
+        return try {
+            val host = Uri.parse(url).host?.lowercase() ?: return false
+            host == "examsaide.com" || host.endsWith(".examsaide.com")
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Links that should leave the app: phone, email, WhatsApp, the Play Store,
+     * YouTube and social apps. Everything else (including Paystack and any bank
+     * 3-D Secure page it redirects to) stays inside the WebView.
+     */
+    private fun shouldOpenExternally(url: String): Boolean {
+        val lower = url.lowercase()
+        if (lower.startsWith("tel:") || lower.startsWith("mailto:") || lower.startsWith("sms:") ||
+            lower.startsWith("whatsapp:") || lower.startsWith("intent:") || lower.startsWith("market:")) {
+            return true
+        }
+        if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+            return true // any other custom scheme
+        }
+        val externalHosts = listOf(
+            "wa.me", "api.whatsapp.com", "chat.whatsapp.com",
+            "play.google.com", "youtube.com", "youtu.be",
+            "facebook.com", "instagram.com", "twitter.com", "x.com", "tiktok.com", "t.me"
         )
         return try {
-            val host = Uri.parse(url).host ?: return false
-            internalHosts.any { host == it || host.endsWith(".$it") }
+            val host = Uri.parse(url).host?.lowercase() ?: return false
+            externalHosts.any { host == it || host.endsWith(".$it") }
         } catch (e: Exception) {
             false
         }
