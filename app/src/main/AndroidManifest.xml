@@ -29,6 +29,20 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Android App Links: https://examsaide.com/... and https://learn.examsaide.com/...
+                 open inside the app (agent referral links /?ref=CODE, shared course links,
+                 enrolment emails). autoVerify needs /.well-known/assetlinks.json on each host
+                 (see README_ANDROID_FIX.md); until that file is live, Android shows an
+                 "open with" chooser instead of opening the app directly. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="examsaide.com" />
+                <data android:scheme="https" android:host="www.examsaide.com" />
+                <data android:scheme="https" android:host="learn.examsaide.com" />
+            </intent-filter>
         </activity>
 
         <service
